@@ -1,0 +1,47 @@
+{
+  "name": "mydata-market-web25-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "demo:reset": "npm run compile && node scripts/reset-demo.js",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "ethers": "^6.16.0",
+    "next": "^16.2.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.7",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.4",
+    "@nomicfoundation/hardhat-mocha": "^3.0.15",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.20",
+    "chai": "^6.2.2",
+    "dotenv": "^17.4.0",
+    "hardhat": "^3.3.0",
+    "mocha": "^11.7.5",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "overrides": {
+    "mocha": {
+      "diff": "^8.0.3",
+      "serialize-javascript": "^7.0.5"
+    }
+  }
+}

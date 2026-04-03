@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6efe4;
+  --bg-deep: #ead7bb;
+  --card: rgba(255, 250, 242, 0.82);
+  --line: rgba(49, 33, 17, 0.12);
+  --ink: #20160f;
+  --muted: #6d5a4b;
+  --accent: #f46524;
+  --accent-strong: #d44f16;
+  --warm: #ffd7a3;
+  --success: #21573d;
+  --danger: #932d20;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(244, 101, 36, 0.18), transparent 34%),
+    radial-gradient(circle at top right, rgba(93, 143, 126, 0.12), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, #f9f4ec 42%, var(--bg-deep) 100%);
+  font-family: var(--font-display), sans-serif;
+}
+
+pre,
+code,
+textarea,
+input {
+  font-family: var(--font-mono), monospace;
+}
+
+.panel {
+  @apply rounded-[28px] border border-line bg-card shadow-glow backdrop-blur;
+}
+
+.button-primary {
+  @apply inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.button-secondary {
+  @apply inline-flex items-center justify-center rounded-full border border-line bg-white/70 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.input-surface {
+  @apply w-full rounded-2xl border border-line bg-white/80 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent;
+}
+
+.eyebrow {
+  @apply inline-flex rounded-full border border-line bg-white/70 px-3 py-1 text-xs uppercase tracking-[0.25em] text-[color:var(--muted)];
+}
+
+.muted {
+  color: var(--muted);
+}
+

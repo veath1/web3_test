@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+coverage
+artifacts
+cache
+typechain-types
+.env
+.env.local
+.env.*.local
+.demo-state.json
+yarn.lock
+pnpm-lock.yaml
