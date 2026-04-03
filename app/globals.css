@@ -58,6 +58,18 @@ input {
   @apply w-full rounded-2xl border border-line bg-white/80 px-4 py-3 text-sm text-ink outline-none transition focus:border-accent;
 }
 
+.chip-filter {
+  @apply inline-flex items-center justify-center rounded-full border border-line bg-white/80 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-white;
+}
+
+.chip-filter-active {
+  @apply border-[#cb5a21] bg-[#fff0e7] text-[#9d4317];
+}
+
+.chip-tag {
+  @apply inline-flex items-center justify-center rounded-full bg-[#f4ede2] px-3 py-1 text-xs font-medium text-[#6d5a4b];
+}
+
 .eyebrow {
   @apply inline-flex rounded-full border border-line bg-white/70 px-3 py-1 text-xs uppercase tracking-[0.25em] text-[color:var(--muted)];
 }
@@ -65,4 +77,3 @@ input {
 .muted {
   color: var(--muted);
 }
-

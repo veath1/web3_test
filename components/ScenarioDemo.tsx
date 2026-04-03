@@ -45,6 +45,29 @@ const tabs: Array<{ id: TabId; short: string; title: string }> = [
   { id: "explorer", short: "5", title: "블록체인 확인" }
 ];
 
+const filterOptions = [
+  {
+    token: "high-net-worth",
+    label: "고액 자산가",
+    description: "예적금 여력이 큰 사용자"
+  },
+  {
+    token: "no-irp",
+    label: "IRP 미가입",
+    description: "IRP 계좌가 없는 사용자"
+  },
+  {
+    token: "salary-worker",
+    label: "직장인",
+    description: "급여소득 기반 고객군"
+  },
+  {
+    token: "irp-enrollment",
+    label: "IRP 관심군",
+    description: "퇴직연금 캠페인 대상"
+  }
+] as const;
+
 const stepNarratives: Record<
   TabId,
   {
@@ -197,6 +220,13 @@ function summarizeText(value: string, limit = 110) {
   return `${value.slice(0, limit).trim()}...`;
 }
 
+function parseTagTokens(value: string) {
+  return value
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
 export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
   const [activeTab, setActiveTab] = useState<TabId>("register");
   const [sellerWallet, setSellerWallet] = useState(defaultSellerWallet);
@@ -206,6 +236,11 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
   const [tags, setTags] = useState("high-net-worth, no-irp, irp-enrollment");
   const [requestTitle, setRequestTitle] = useState("IRP 가입 유도 대상 요청");
   const [requestRule, setRequestRule] = useState("예적금은 많지만 IRP 계좌가 없는 사용자 찾기");
+  const [selectedRequestFilters, setSelectedRequestFilters] = useState<string[]>([
+    "high-net-worth",
+    "no-irp",
+    "irp-enrollment"
+  ]);
   const [demoDbId, setDemoDbId] = useState("");
   const [listingReady, setListingReady] = useState(false);
   const [requestReady, setRequestReady] = useState(false);
@@ -276,6 +311,8 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
   const hasContractAddress = isAddress(contractAddress) && !/^0x0{40}$/i.test(contractAddress);
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const activeNarrative = stepNarratives[activeTab];
+  const listingTokens = parseTagTokens(tags);
+  const matchedRequestFilters = selectedRequestFilters.filter((token) => listingTokens.includes(token));
   const progressItems = [
     {
       label: "개인 데이터 등록",
@@ -322,6 +359,27 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
 
     setSelectedBlockIndex(index);
     setInteractionFeedback(`Block ${block.index} ${block.label}을 선택했습니다. 아래 상세 정보가 갱신되었습니다.`);
+  }
+
+  function toggleRequestFilter(token: string) {
+    setSelectedRequestFilters((current) => {
+      const next = current.includes(token)
+        ? current.filter((item) => item !== token)
+        : [...current, token];
+
+      const nextLabels = filterOptions
+        .filter((item) => next.includes(item.token))
+        .map((item) => item.label)
+        .join(", ");
+
+      setInteractionFeedback(
+        next.length
+          ? `요청 필터를 갱신했습니다. 현재 선택: ${nextLabels}`
+          : "요청 필터가 모두 해제되었습니다."
+      );
+
+      return next;
+    });
   }
 
   function registerScenario() {
@@ -371,10 +429,15 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
       return;
     }
 
+    if (!selectedRequestFilters.length) {
+      setStatus("최소 1개의 요청 필터를 선택하세요.");
+      return;
+    }
+
     setRequestReady(true);
     appendEvent(
       "REQUESTED",
-      `Enterprise ${shortAddress(normalizeAddress(enterpriseWallet))} requested ${requestTitle}. Rule: ${requestRule}.`
+      `Enterprise ${shortAddress(normalizeAddress(enterpriseWallet))} requested ${requestTitle}. Filters: ${selectedRequestFilters.join(", ")}. Rule: ${requestRule}.`
     );
     setStatus("2단계 완료. 기업이 어떤 고객군을 원하는지 요청이 기록되었습니다.");
     setInteractionFeedback("기업 요청이 장부에 기록되었습니다. 이제 결제와 열람 단계로 이동합니다.");
@@ -433,6 +496,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
     setTags("high-net-worth, no-irp, irp-enrollment");
     setRequestTitle("IRP 가입 유도 대상 요청");
     setRequestRule("예적금은 많지만 IRP 계좌가 없는 사용자 찾기");
+    setSelectedRequestFilters(["high-net-worth", "no-irp", "irp-enrollment"]);
     setDemoDbId("");
     setListingReady(false);
     setRequestReady(false);
@@ -451,7 +515,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
   function renderActiveTab() {
     if (activeTab === "register") {
       return (
-        <div className="rounded-[24px] border border-line bg-white/75 p-5">
+        <div className="h-full rounded-[24px] border border-line bg-white/75 p-5">
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-lg font-semibold">1. 개인 데이터와 지갑 정보를 등록합니다</p>
@@ -482,7 +546,13 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
               <div className="rounded-[20px] border border-line bg-[#fff6ea] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] muted">데이터 요약</p>
                 <p className="mt-2 text-sm font-medium">예적금 5,000만 원 보유, IRP 계좌 없음</p>
-                <p className="mt-2 text-xs muted">태그 기준: {tags}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {listingTokens.map((token) => (
+                    <span className="chip-tag" key={token}>
+                      {token}
+                    </span>
+                  ))}
+                </div>
               </div>
               <label className="block space-y-2">
                 <span className="text-sm font-medium">판매 가격</span>
@@ -597,31 +667,66 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
 
     if (activeTab === "request") {
       return (
-        <div className="rounded-[24px] border border-line bg-white/75 p-5">
+        <div className="h-full rounded-[24px] border border-line bg-white/75 p-5">
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-lg font-semibold">2. 기업이 IRP 타깃 고객을 요청합니다</p>
               <p className="text-sm leading-6 muted">
-                이 단계는 왜 기업이 돈을 내는지를 보여주는 구간입니다. 무작위 광고가 아니라
-                정확한 타깃을 사는 구조라는 점을 설명합니다.
+                자유 입력보다 선택형 조건을 먼저 고르게 해서, 어떤 데이터를 원하는지 한눈에
+                이해되도록 정리한 단계입니다.
               </p>
             </div>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium">요청 이름</span>
-              <input
-                className="input-surface"
-                onChange={(event) => setRequestTitle(event.target.value)}
-                value={requestTitle}
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium">타깃 조건</span>
-              <textarea
-                className="input-surface min-h-32 resize-y"
-                onChange={(event) => setRequestRule(event.target.value)}
-                value={requestRule}
-              />
-            </label>
+            <div className="rounded-[20px] border border-line bg-white p-4">
+              <p className="text-sm font-medium">요청 필터 선택</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {filterOptions.map((option) => {
+                  const isSelected = selectedRequestFilters.includes(option.token);
+                  return (
+                    <button
+                      className={`chip-filter ${isSelected ? "chip-filter-active" : ""}`}
+                      key={option.token}
+                      onClick={() => toggleRequestFilter(option.token)}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {filterOptions.map((option) => (
+                  <div
+                    className={`rounded-[16px] border p-3 text-sm leading-6 ${
+                      selectedRequestFilters.includes(option.token)
+                        ? "border-[#f0c28f] bg-[#fff8f0]"
+                        : "border-line bg-[#fffdf9]"
+                    }`}
+                    key={option.token}
+                  >
+                    <p className="font-medium">{option.label}</p>
+                    <p className="mt-1 muted">{option.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-[1fr_1.1fr]">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium">요청 이름</span>
+                <input
+                  className="input-surface"
+                  onChange={(event) => setRequestTitle(event.target.value)}
+                  value={requestTitle}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-medium">추가 메모</span>
+                <input
+                  className="input-surface"
+                  onChange={(event) => setRequestRule(event.target.value)}
+                  value={requestRule}
+                />
+              </label>
+            </div>
             <button className="button-primary w-full" onClick={submitRequest} type="button">
               기업 요청 제출
             </button>
@@ -638,8 +743,19 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
                 <div className="mt-4 space-y-3 text-sm leading-6 muted">
                   <p>기업 지갑: {shortAddress(normalizeAddress(enterpriseWallet))}</p>
                   <p>요청 이름: {requestTitle}</p>
-                  <p>조건: {requestRule}</p>
-                  <p>매칭 태그: {tags}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRequestFilters.length ? (
+                      selectedRequestFilters.map((token) => (
+                        <span className="chip-tag" key={token}>
+                          {token}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs muted">선택된 요청 필터 없음</span>
+                    )}
+                  </div>
+                  <p>추가 메모: {requestRule}</p>
+                  <p>등록된 데이터와 일치하는 필터 수: {matchedRequestFilters.length}</p>
                   <p>판매 목록 등록 여부: {listingReady ? "완료" : "미완료"}</p>
                 </div>
               </div>
@@ -651,7 +767,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
 
     if (activeTab === "payment") {
       return (
-        <div className="rounded-[24px] border border-line bg-white/75 p-5">
+        <div className="h-full rounded-[24px] border border-line bg-white/75 p-5">
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-lg font-semibold">3. 기업이 결제하고 데이터 열람 권한을 얻습니다</p>
@@ -710,7 +826,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
 
     if (activeTab === "seller") {
       return (
-        <div className="rounded-[24px] border border-line bg-white/75 p-5">
+        <div className="h-full rounded-[24px] border border-line bg-white/75 p-5">
           <div className="space-y-4">
             <div>
               <p className="text-lg font-semibold">4. 판매자가 열람 기록과 입금을 확인합니다</p>
@@ -767,7 +883,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
 
     if (activeTab === "explorer") {
       return (
-        <div className="rounded-[24px] border border-line bg-white/75 p-5">
+        <div className="h-full rounded-[24px] border border-line bg-white/75 p-5">
           <div className="space-y-4">
             <p className="text-lg font-semibold">5. 외부 블록체인 기록으로 신뢰를 설명합니다</p>
             <p className="mt-2 text-sm leading-6 muted">
@@ -1020,8 +1136,9 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-[22px] border border-line bg-white/75 p-4">
-          <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-4 xl:grid-cols-[0.84fr_1.16fr]">
+          <div className="h-full rounded-[22px] border border-line bg-white/75 p-4">
+          <div className="grid gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] muted">이번 단계</p>
               <p className="mt-3 text-lg font-semibold">{activeNarrative.title}</p>
@@ -1032,7 +1149,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
               <p className="mt-3 text-sm leading-6 muted">{activeNarrative.system}</p>
             </div>
           </div>
-          <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="mt-4 grid gap-3">
             <div className="rounded-[18px] border border-line bg-[#fff6ea] p-3 text-sm leading-6">
               <p className="font-medium">여기서 봐야 할 것</p>
               <p className="mt-2 muted">{activeNarrative.proof}</p>
@@ -1052,7 +1169,7 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
               <p className="mt-2 break-all text-xs muted">{enterpriseWallet}</p>
             </div>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {progressItems.map((item) => (
               <div className="rounded-[18px] border border-line bg-white p-3" key={item.label}>
                 <p className="text-sm font-medium">{item.label}</p>
@@ -1060,9 +1177,10 @@ export function ScenarioDemo({ account, onAccountChange }: ScenarioDemoProps) {
               </div>
             ))}
           </div>
-        </div>
+          </div>
 
         {renderActiveTab()}
+        </div>
 
         {renderLedgerPanel()}
       </div>
